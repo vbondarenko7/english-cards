@@ -168,13 +168,11 @@ let S = { dir: 'ru-en', days: [], known: { 'ru-en': {}, 'en-ru': {} } };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY))); } catch {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
 
-const canSpeak = 'speechSynthesis' in window;
-function say(text) {
-  if (!canSpeak) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-US'; u.rate = 0.9;
-  speechSynthesis.speak(u);
+// Озвучка — записи нейроголоса из audio/ (делает tools/voice.sh), номер файла = номер фразы.
+const player = new Audio();
+function say(i) {
+  player.src = `audio/${String(i + 1).padStart(2, '0')}.mp3`;
+  player.play().catch(() => {});
 }
 
 let R;
@@ -220,14 +218,13 @@ function render() {
     $('answer').hidden = $('no').hidden = $('yes').hidden = !R.revealed;
     $('show').hidden = R.revealed;
     $('hint').hidden = R.revealed || S.days.length > 0;
-    $('say').hidden = !canSpeak || (fromRu && !R.revealed);
+    $('say').hidden = fromRu && !R.revealed;
   }
 
   $('list').replaceChildren(...CARDS.map((c, i) => {
     const li = document.createElement('li');
     const en = Object.assign(document.createElement('button'), { textContent: c.en, lang: 'en', title: 'Послушать' });
-    en.onclick = () => say(c.en);
-    en.disabled = !canSpeak;
+    en.onclick = () => say(i);
     const ru = Object.assign(document.createElement('span'), { className: 'ru', textContent: tie(c.ru) });
     const mark = Object.assign(document.createElement('span'), { className: 'mark', textContent: known[i] ? 'помню' : '' });
     li.append(en, mark, ru);
@@ -240,7 +237,7 @@ $('show').onclick = reveal;
 $('yes').onclick = () => answer(true);
 $('no').onclick = () => answer(false);
 // Фокус снимаем, чтобы пробел после этих кнопок снова открывал ответ, а не нажимал их повторно.
-$('say').onclick = e => { say(CARDS[R.queue[0]].en); e.currentTarget.blur(); };
+$('say').onclick = e => { say(R.queue[0]); e.currentTarget.blur(); };
 $('again').onclick = () => startRound(all());
 $('retry').onclick = () => startRound([...R.missed]);
 document.querySelectorAll('.dir button').forEach(b => b.onclick = () => { S.dir = b.dataset.dir; save(); b.blur(); startRound(all()); });
@@ -251,7 +248,7 @@ document.addEventListener('keydown', e => {
   if ((e.key === ' ' || e.key === 'Enter') && !onControl && !R.revealed) { e.preventDefault(); reveal(); }
   else if (e.key === 'ArrowRight' && R.revealed) answer(true);
   else if (e.key === 'ArrowLeft' && R.revealed) answer(false);
-  else if (e.key === 'ArrowUp' && !$('say').hidden) { e.preventDefault(); say(CARDS[R.queue[0]].en); }
+  else if (e.key === 'ArrowUp' && !$('say').hidden) { e.preventDefault(); say(R.queue[0]); }
 });
 
 // Проверка логики: открыть страницу с ?selftest и посмотреть заголовок вкладки.
