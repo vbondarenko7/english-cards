@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>20 действий с предметами</title>
+<style>
+:root {
+  --bg: #f6f5f1; --surface: #ffffff; --ink: #1c1b19; --muted: #5f5c55; --line: #d8d5cc;
+  --accent: #1f5f4a; --accent-ink: #ffffff;
+  --gap: 1.5rem;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161614; --surface: #1f1f1c; --ink: #edebe6; --muted: #a8a49b; --line: #383733;
+    --accent: #7fd1b3; --accent-ink: #10231c;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; accent-color: var(--accent); }
+body { margin: 0; background: var(--bg); color: var(--ink); min-height: 100dvh; display: flex; justify-content: center; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+main { width: 100%; max-width: 36rem; padding: 1.5rem 1.25rem 3rem; display: flex; flex-direction: column; gap: var(--gap); }
+p, h1, h2, ol, ul { margin: 0; }
+
+/* Шкала: метка .8125 · UI .9375 · текст 1 · подзаголовок 1.25 · фраза 1.5 */
+h1 { font-size: 1rem; font-weight: 600; text-wrap: balance; }
+h2 { font-size: 1.25rem; font-weight: 600; line-height: 1.3; text-wrap: balance; }
+.meta, .stats, .mark, kbd { font-size: .8125rem; color: var(--muted); }
+.phrase { font-size: 1.5rem; font-weight: 600; line-height: 1.3; text-wrap: balance; }
+.hint { color: var(--muted); text-wrap: pretty; max-width: 32rem; }
+
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1rem; }
+
+button {
+  font: inherit; font-size: .9375rem; font-weight: 500; color: var(--ink);
+  min-height: 3rem; padding: .5rem 1rem; border: 1px solid var(--line); border-radius: .625rem;
+  background: var(--surface); cursor: pointer; transition: background-color .15s, border-color .15s, color .15s;
+}
+button:hover { border-color: var(--muted); }
+button:active { transform: translateY(1px); }
+button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.primary:hover { background: color-mix(in oklab, var(--accent) 86%, var(--ink)); }
+kbd { font-family: inherit; color: inherit; opacity: .7; margin-left: .375rem; padding: 0 .3rem; border: 1px solid currentColor; border-radius: .25rem; }
+@media (hover: none) { kbd { display: none; } }
+
+.dir { display: flex; }
+.dir button { min-height: 2.75rem; border-radius: 0; }
+.dir button:first-child { border-radius: .625rem 0 0 .625rem; }
+.dir button:last-child { border-radius: 0 .625rem .625rem 0; margin-left: -1px; }
+.dir button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); position: relative; }
+
+section { display: flex; flex-direction: column; gap: 1rem; }
+.card {
+  min-height: 15rem; padding: 1.25rem 1.5rem 1.75rem; display: flex; flex-direction: column; gap: 1rem;
+  background: var(--surface); border: 1px solid var(--line); border-radius: .875rem;
+}
+.card .body { margin-block: auto; display: grid; gap: 1rem; }
+.answer { color: var(--accent); padding-top: 1rem; border-top: 1px solid var(--line); }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.actions .wide { grid-column: 1 / -1; }
+
+#missed { padding-left: 1.25rem; display: grid; gap: .375rem; text-wrap: pretty; }
+
+summary { cursor: pointer; padding: .75rem 0; font-weight: 500; border-radius: .25rem; }
+#list { list-style: none; padding: 0; border-top: 1px solid var(--line); }
+#list li { display: grid; grid-template-columns: 1fr auto; gap: 0 1rem; align-items: baseline; padding: .625rem 0; border-bottom: 1px solid var(--line); }
+#list button { min-height: 0; padding: 0; border: 0; border-radius: .25rem; background: none; font-size: 1rem; font-weight: 600; text-align: left; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: .2em; }
+#list button:hover { text-decoration-color: var(--accent); }
+#list .ru { grid-column: 1; color: var(--muted); }
+#list .mark { grid-row: 1; grid-column: 2; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>20 действий с&nbsp;предметами</h1>
+    <div class="dir" role="group" aria-label="С какого языка вспоминать">
+      <button data-dir="ru-en">С русского</button>
+      <button data-dir="en-ru">С английского</button>
+    </div>
+  </header>
+
+  <p class="stats" id="stats"></p>
+
+  <section id="play">
+    <div class="card">
+      <p class="meta" id="left"></p>
+      <div class="body">
+        <p class="phrase" id="prompt"></p>
+        <p class="phrase answer" id="answer"></p>
+        <p class="hint" id="hint">Скажи перевод вслух, потом открой ответ и&nbsp;отметь, вспомнилось или нет.</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="show" class="primary wide">Показать ответ <kbd>пробел</kbd></button>
+      <button id="no">Не помню <kbd>←</kbd></button>
+      <button id="yes" class="primary">Помню <kbd>→</kbd></button>
+      <button id="say" class="wide">Послушать <kbd>↑</kbd></button>
+    </div>
+  </section>
+
+  <section id="done">
+    <h2>Круг пройден</h2>
+    <p id="score"></p>
+    <ul id="missed"></ul>
+    <div class="actions">
+      <button id="retry">Повторить трудные</button>
+      <button id="again" class="primary">Ещё круг</button>
+    </div>
+  </section>
+
+  <details>
+    <summary>Все 20 фраз</summary>
+    <ol id="list"></ol>
+  </details>
+</main>
+
+<script>
+// Фразы — из описания к видео «#01 Тренировка | 20 главных действий с предметами».
+const CARDS = [
+  ['Pick up the phone.', 'Подними / возьми телефон.'],
+  ['Put the cup down on the table.', 'Поставь чашку на стол.'],
+  ['Move the book aside.', 'Отодвинь книгу в сторону.'],
+  ['Move the box over here.', 'Передвинь / переставь коробку сюда.'],
+  ['Put the key in your pocket.', 'Положи ключ в карман.'],
+  ['Take the key out of your pocket.', 'Достань ключ из кармана.'],
+  ['Give me the pen.', 'Дай мне ручку.'],
+  ['Lift the box up.', 'Подними коробку вверх.'],
+  ['Lower the box slowly.', 'Медленно опусти коробку.'],
+  ['Tilt the bottle slightly.', 'Слегка наклони бутылку.'],
+  ['Keep the bottle upright.', 'Держи бутылку вертикально.'],
+  ['Bring the phone closer.', 'Поднеси телефон ближе.'],
+  ['Move the phone farther away.', 'Отодвинь / отнеси телефон подальше.'],
+  ['Give the bottle a good shake.', 'Хорошенько встряхни бутылку.'],
+  ['Be careful! Don’t drop the glass.', 'Осторожно! Не урони стакан.'],
+  ['Carry the laptop carefully.', 'Неси ноутбук осторожно.'],
+  ['Set the plate down gently.', 'Аккуратно поставь тарелку.'],
+  ['Turn the phone around.', 'Разверни телефон.'],
+  ['Turn the cup upside down.', 'Переверни чашку вверх дном.'],
+  ['Leave the keys there.', 'Оставь ключи там.'],
+].map(([en, ru]) => ({ en, ru }));
+
+const $ = id => document.getElementById(id);
+// Короткие слова («в», «на», «не») не оставляем висеть в конце строки.
+const tie = s => s.replace(/(^|[\s(«])([А-Яа-яЁё]{1,2})\s/g, '$1$2 ');
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// Сколько дней подряд были занятия; сегодняшний пропуск серию ещё не рвёт.
+function streak(days, today) {
+  const set = new Set(days), d = new Date(today + 'T12:00');
+  if (!set.has(iso(d))) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (set.has(iso(d))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+const KEY = 'english-cards-v1';
+let S = { dir: 'ru-en', days: [], known: { 'ru-en': {}, 'en-ru': {} } };
+try { Object.assign(S, JSON.parse(localStorage.getItem(KEY))); } catch {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+
+const canSpeak = 'speechSynthesis' in window;
+function say(text) {
+  if (!canSpeak) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = 0.9;
+  speechSynthesis.speak(u);
+}
+
+let R;
+function startRound(ids) {
+  R = { queue: shuffle([...ids]), missed: new Set(), total: ids.length, revealed: false };
+  render();
+}
+
+function answer(knew) {
+  // Круг — один проход: невспомненная карточка в этом круге не возвращается.
+  const i = R.queue.shift();
+  if (!knew) R.missed.add(i);
+  S.known[S.dir][i] = knew;
+  const today = iso(new Date());
+  if (!S.days.includes(today)) S.days.push(today);
+  R.revealed = false;
+  save(); render();
+}
+
+function reveal() { R.revealed = true; render(); }
+
+function setPhrase(el, lang, c) { el.lang = lang; el.textContent = lang === 'ru' ? tie(c.ru) : c.en; }
+
+function render() {
+  const fromRu = S.dir === 'ru-en', known = S.known[S.dir];
+  document.querySelectorAll('.dir button').forEach(b => b.setAttribute('aria-pressed', b.dataset.dir === S.dir));
+  $('stats').textContent = `Дней подряд: ${streak(S.days, iso(new Date()))} · Помню: ${CARDS.filter((_, i) => known[i]).length} из ${CARDS.length}`;
+
+  const over = !R.queue.length;
+  $('play').hidden = over; $('done').hidden = !over;
+  if (over) {
+    const missed = [...R.missed];
+    $('score').textContent = missed.length ? `Помню ${R.total - missed.length} из ${R.total}. Не вспомнились:` : 'Вспомнились все.';
+    $('missed').replaceChildren(...missed.map(i => Object.assign(document.createElement('li'), { textContent: `${CARDS[i].en} — ${tie(CARDS[i].ru)}` })));
+    $('missed').hidden = $('retry').hidden = !missed.length;
+    $('retry').textContent = `Повторить трудные (${missed.length})`;
+    $('again').classList.toggle('wide', !missed.length);
+  } else {
+    const c = CARDS[R.queue[0]];
+    setPhrase($('prompt'), fromRu ? 'ru' : 'en', c);
+    setPhrase($('answer'), fromRu ? 'en' : 'ru', c);
+    $('left').textContent = `Осталось: ${R.queue.length}`;
+    $('answer').hidden = $('no').hidden = $('yes').hidden = !R.revealed;
+    $('show').hidden = R.revealed;
+    $('hint').hidden = R.revealed || S.days.length > 0;
+    $('say').hidden = !canSpeak || (fromRu && !R.revealed);
+  }
+
+  $('list').replaceChildren(...CARDS.map((c, i) => {
+    const li = document.createElement('li');
+    const en = Object.assign(document.createElement('button'), { textContent: c.en, lang: 'en', title: 'Послушать' });
+    en.onclick = () => say(c.en);
+    en.disabled = !canSpeak;
+    const ru = Object.assign(document.createElement('span'), { className: 'ru', textContent: tie(c.ru) });
+    const mark = Object.assign(document.createElement('span'), { className: 'mark', textContent: known[i] ? 'помню' : '' });
+    li.append(en, mark, ru);
+    return li;
+  }));
+}
+
+const all = () => CARDS.map((_, i) => i);
+$('show').onclick = reveal;
+$('yes').onclick = () => answer(true);
+$('no').onclick = () => answer(false);
+// Фокус снимаем, чтобы пробел после этих кнопок снова открывал ответ, а не нажимал их повторно.
+$('say').onclick = e => { say(CARDS[R.queue[0]].en); e.currentTarget.blur(); };
+$('again').onclick = () => startRound(all());
+$('retry').onclick = () => startRound([...R.missed]);
+document.querySelectorAll('.dir button').forEach(b => b.onclick = () => { S.dir = b.dataset.dir; save(); b.blur(); startRound(all()); });
+
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey || !R.queue.length) return;
+  const onControl = e.target.closest('button, summary');
+  if ((e.key === ' ' || e.key === 'Enter') && !onControl && !R.revealed) { e.preventDefault(); reveal(); }
+  else if (e.key === 'ArrowRight' && R.revealed) answer(true);
+  else if (e.key === 'ArrowLeft' && R.revealed) answer(false);
+  else if (e.key === 'ArrowUp' && !$('say').hidden) { e.preventDefault(); say(CARDS[R.queue[0]].en); }
+});
+
+// Проверка логики: открыть страницу с ?selftest и посмотреть заголовок вкладки.
+if (location.search.includes('selftest')) {
+  const ok = (c, m) => { if (!c) { document.title = 'selftest FAILED: ' + m; throw new Error(m); } };
+  ok(streak(['2026-10-04', '2026-10-05', '2026-10-06'], '2026-10-06') === 3, 'три дня подряд');
+  ok(streak(['2026-10-04', '2026-10-05'], '2026-10-06') === 2, 'сегодня ещё не занимался — серия жива');
+  ok(streak(['2026-10-03'], '2026-10-06') === 0, 'пропуск рвёт серию');
+  ok(streak(['2026-09-30', '2026-10-01'], '2026-10-01') === 2, 'переход через месяц');
+  ok(streak([], '2026-10-06') === 0, 'пусто');
+  document.title = 'selftest ok';
+}
+
+startRound(all());
+</script>
+</body>
+</html>
