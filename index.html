@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>20 действий с предметами</title>
+<title>Карточки для английского</title>
 <style>
 :root {
   --bg: #f6f5f1; --surface: #ffffff; --ink: #1c1b19; --muted: #5f5c55; --line: #d8d5cc;
@@ -26,13 +26,18 @@ main { width: 100%; max-width: 36rem; padding: 1.5rem 1.25rem 3rem; display: fle
 p, h1, h2, ol, ul { margin: 0; }
 
 /* Шкала: метка .8125 · UI .9375 · текст 1 · подзаголовок 1.25 · фраза 1.5 */
-h1 { font-size: 1rem; font-weight: 600; text-wrap: balance; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 h2 { font-size: 1.25rem; font-weight: 600; line-height: 1.3; text-wrap: balance; }
 .meta, .stats, .mark, kbd { font-size: .8125rem; color: var(--muted); }
 .phrase { font-size: 1.5rem; font-weight: 600; line-height: 1.3; text-wrap: balance; }
 .hint { color: var(--muted); text-wrap: pretty; max-width: 32rem; }
 
-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1rem; }
+header { display: flex; flex-wrap: wrap; gap: .75rem; }
+select {
+  flex: 1 1 100%; font: inherit; font-weight: 600; color: var(--ink); min-height: 3rem; padding: .5rem 1rem;
+  border: 1px solid var(--line); border-radius: .625rem; background: var(--surface); cursor: pointer;
+}
+select:hover { border-color: var(--muted); }
 
 button {
   font: inherit; font-size: .9375rem; font-weight: 500; color: var(--ink);
@@ -41,17 +46,17 @@ button {
 }
 button:hover { border-color: var(--muted); }
 button:active { transform: translateY(1px); }
-button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 button.primary:hover { background: color-mix(in oklab, var(--accent) 86%, var(--ink)); }
 kbd { font-family: inherit; color: inherit; opacity: .7; margin-left: .375rem; padding: 0 .3rem; border: 1px solid currentColor; border-radius: .25rem; }
 @media (hover: none) { kbd { display: none; } }
 
-.dir { display: flex; }
-.dir button { min-height: 2.75rem; border-radius: 0; }
-.dir button:first-child { border-radius: .625rem 0 0 .625rem; }
-.dir button:last-child { border-radius: 0 .625rem .625rem 0; margin-left: -1px; }
-.dir button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); position: relative; }
+.seg { display: flex; flex: 1 1 auto; }
+.seg button { flex: 1; min-height: 2.75rem; padding-inline: .75rem; border-radius: 0; white-space: nowrap; }
+.seg button:first-child { border-radius: .625rem 0 0 .625rem; }
+.seg button:last-child { border-radius: 0 .625rem .625rem 0; margin-left: -1px; }
+.seg button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); position: relative; }
 
 section { display: flex; flex-direction: column; gap: 1rem; }
 .card {
@@ -76,11 +81,16 @@ summary { cursor: pointer; padding: .75rem 0; font-weight: 500; border-radius: .
 </head>
 <body>
 <main>
+  <h1 class="sr">Карточки для английского</h1>
   <header>
-    <h1>20 действий с&nbsp;предметами</h1>
-    <div class="dir" role="group" aria-label="С какого языка вспоминать">
-      <button data-dir="ru-en">С русского</button>
-      <button data-dir="en-ru">С английского</button>
+    <select id="lesson" aria-label="Урок"></select>
+    <div class="seg" id="dir" role="group" aria-label="С какого языка вспоминать">
+      <button data-v="ru-en">С русского</button>
+      <button data-v="en-ru">С английского</button>
+    </div>
+    <div class="seg" id="order" role="group" aria-label="Порядок фраз">
+      <button data-v="chain">По порядку</button>
+      <button data-v="mix">Вразбивку</button>
     </div>
   </header>
 
@@ -92,7 +102,7 @@ summary { cursor: pointer; padding: .75rem 0; font-weight: 500; border-radius: .
       <div class="body">
         <p class="phrase" id="prompt"></p>
         <p class="phrase answer" id="answer"></p>
-        <p class="hint" id="hint">Скажи перевод вслух, потом открой ответ и&nbsp;отметь, вспомнилось или нет.</p>
+        <p class="hint" id="hint"></p>
       </div>
     </div>
     <div class="actions">
@@ -114,35 +124,75 @@ summary { cursor: pointer; padding: .75rem 0; font-weight: 500; border-radius: .
   </section>
 
   <details>
-    <summary>Все 20 фраз</summary>
+    <summary id="listTitle"></summary>
     <ol id="list"></ol>
   </details>
 </main>
 
 <script>
-// Фразы — из описания к видео «#01 Тренировка | 20 главных действий с предметами».
-const CARDS = [
-  ['Pick up the phone.', 'Подними / возьми телефон.'],
-  ['Put the cup down on the table.', 'Поставь чашку на стол.'],
-  ['Move the book aside.', 'Отодвинь книгу в сторону.'],
-  ['Move the box over here.', 'Передвинь / переставь коробку сюда.'],
-  ['Put the key in your pocket.', 'Положи ключ в карман.'],
-  ['Take the key out of your pocket.', 'Достань ключ из кармана.'],
-  ['Give me the pen.', 'Дай мне ручку.'],
-  ['Lift the box up.', 'Подними коробку вверх.'],
-  ['Lower the box slowly.', 'Медленно опусти коробку.'],
-  ['Tilt the bottle slightly.', 'Слегка наклони бутылку.'],
-  ['Keep the bottle upright.', 'Держи бутылку вертикально.'],
-  ['Bring the phone closer.', 'Поднеси телефон ближе.'],
-  ['Move the phone farther away.', 'Отодвинь / отнеси телефон подальше.'],
-  ['Give the bottle a good shake.', 'Хорошенько встряхни бутылку.'],
-  ['Be careful! Don’t drop the glass.', 'Осторожно! Не урони стакан.'],
-  ['Carry the laptop carefully.', 'Неси ноутбук осторожно.'],
-  ['Set the plate down gently.', 'Аккуратно поставь тарелку.'],
-  ['Turn the phone around.', 'Разверни телефон.'],
-  ['Turn the cup upside down.', 'Переверни чашку вверх дном.'],
-  ['Leave the keys there.', 'Оставь ключи там.'],
-].map(([en, ru]) => ({ en, ru }));
+// Фразы — из материалов к видео канала «Английский Язык Сразу». Новый урок добавлять в конец
+// списка: он откроется первым (свежее — в приоритете). chain — фразы идут цепочкой действий,
+// и круг можно проходить по порядку. После правки фраз — tools/voice.sh и tools/voice-check.py.
+const LESSONS = [
+  { id: '1', title: '20 действий с предметами', hint: 'Скажи перевод вслух, потом открой ответ и отметь, вспомнилось или нет.', cards: [
+    ['Pick up the phone.', 'Подними / возьми телефон.'],
+    ['Put the cup down on the table.', 'Поставь чашку на стол.'],
+    ['Move the book aside.', 'Отодвинь книгу в сторону.'],
+    ['Move the box over here.', 'Передвинь / переставь коробку сюда.'],
+    ['Put the key in your pocket.', 'Положи ключ в карман.'],
+    ['Take the key out of your pocket.', 'Достань ключ из кармана.'],
+    ['Give me the pen.', 'Дай мне ручку.'],
+    ['Lift the box up.', 'Подними коробку вверх.'],
+    ['Lower the box slowly.', 'Медленно опусти коробку.'],
+    ['Tilt the bottle slightly.', 'Слегка наклони бутылку.'],
+    ['Keep the bottle upright.', 'Держи бутылку вертикально.'],
+    ['Bring the phone closer.', 'Поднеси телефон ближе.'],
+    ['Move the phone farther away.', 'Отодвинь / отнеси телефон подальше.'],
+    ['Give the bottle a good shake.', 'Хорошенько встряхни бутылку.'],
+    ['Be careful! Don’t drop the glass.', 'Осторожно! Не урони стакан.'],
+    ['Carry the laptop carefully.', 'Неси ноутбук осторожно.'],
+    ['Set the plate down gently.', 'Аккуратно поставь тарелку.'],
+    ['Turn the phone around.', 'Разверни телефон.'],
+    ['Turn the cup upside down.', 'Переверни чашку вверх дном.'],
+    ['Leave the keys there.', 'Оставь ключи там.'],
+  ] },
+  { id: '2', title: 'Приключения чашки', chain: true, hint: 'Возьми настоящую чашку. Прочитай действие, сделай его и скажи вслух по-английски, потом открой ответ.', cards: [
+    ['Pick up the cup.', 'Возьми чашку.'],
+    ['Put the cup down on the table.', 'Поставь чашку на стол.'],
+    ['Turn the cup around.', 'Поверни чашку другой стороной.'],
+    ['Move the cup aside.', 'Отодвинь чашку в сторону.'],
+    ['Move the cup over here.', 'Переставь чашку сюда.'],
+    ['Put the cup in the cabinet.', 'Поставь чашку в шкаф.'],
+    ['Take it out of the cabinet.', 'Достань её из шкафа.'],
+    ['Give the cup to me.', 'Дай чашку мне.'],
+    ['Hold the cup by the handle.', 'Держи чашку за ручку.'],
+    ['Lift the cup up.', 'Подними чашку.'],
+    ['Lower the cup slowly.', 'Медленно опусти чашку.'],
+    ['Tilt the cup slightly.', 'Слегка наклони чашку.'],
+    ['Don’t spill the drink.', 'Не пролей напиток.'],
+    ['Keep the cup steady.', 'Держи чашку неподвижно.'],
+    ['Bring the cup closer.', 'Поднеси чашку ближе.'],
+    ['Move the cup farther away.', 'Отодвинь чашку подальше.'],
+    ['Look at the cup.', 'Посмотри на чашку.'],
+    ['Check if it’s clean.', 'Проверь, чистая ли она.'],
+    ['Shake the cup gently.', 'Осторожно встряхни чашку.'],
+    ['Be careful! Don’t drop the cup.', 'Осторожно! Не урони чашку.'],
+    ['Carry the cup carefully.', 'Неси чашку осторожно.'],
+    ['Set the cup down gently.', 'Аккуратно поставь чашку.'],
+    ['Pour some water into the cup.', 'Налей немного воды в чашку.'],
+    ['Add some sugar.', 'Добавь немного сахара.'],
+    ['Stir the drink.', 'Размешай напиток.'],
+    ['Bring the cup to your lips.', 'Поднеси чашку к губам.'],
+    ['Take a sip.', 'Сделай глоток.'],
+    ['Be careful, it’s hot.', 'Осторожно, напиток горячий.'],
+    ['Drink from the cup.', 'Пей из чашки.'],
+    ['Finish your drink.', 'Допей свой напиток.'],
+    ['Wash the cup.', 'Помой чашку.'],
+    ['Turn the cup upside down.', 'Переверни чашку вверх дном.'],
+    ['Leave the cup there.', 'Оставь чашку там.'],
+  ] },
+];
+LESSONS.forEach(l => l.cards = l.cards.map(([en, ru]) => ({ en, ru })));
 
 const $ = id => document.getElementById(id);
 // Короткие слова («в», «на», «не») не оставляем висеть в конце строки.
@@ -162,22 +212,28 @@ function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 }
+// Цепочку действий проходим по порядку, пока не включено «Вразбивку»; остальное всегда вперемешку.
+const order = (ids, chain) => chain ? [...ids].sort((a, b) => a - b) : shuffle([...ids]);
 
 const KEY = 'english-cards-v1';
-let S = { dir: 'ru-en', days: [], known: { 'ru-en': {}, 'en-ru': {} } };
+let S = { dir: 'ru-en', days: [], known: {}, mix: false };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY))); } catch {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+// Пока урок был один, его отметки лежали прямо под направлением — переносим под первый урок.
+for (const d of ['ru-en', 'en-ru']) if (S.known[d]) { S.known['1:' + d] = S.known[d]; delete S.known[d]; }
+let L = LESSONS.find(l => l.id === S.lesson) || LESSONS.at(-1);
+const known = () => S.known[L.id + ':' + S.dir] ??= {};
 
-// Озвучка — записи нейроголоса из audio/ (делает tools/voice.sh), номер файла = номер фразы.
+// Озвучка — записи нейроголоса из audio/<урок>/ (делает tools/voice.sh), номер файла = номер фразы.
 const player = new Audio();
 function say(i) {
-  player.src = `audio/${String(i + 1).padStart(2, '0')}.mp3`;
+  player.src = `audio/${L.id}/${String(i + 1).padStart(2, '0')}.mp3`;
   player.play().catch(() => {});
 }
 
 let R;
 function startRound(ids) {
-  R = { queue: shuffle([...ids]), missed: new Set(), total: ids.length, revealed: false };
+  R = { queue: order(ids, L.chain && !S.mix), missed: new Set(), total: ids.length, revealed: false };
   render();
 }
 
@@ -185,7 +241,7 @@ function answer(knew) {
   // Круг — один проход: невспомненная карточка в этом круге не возвращается.
   const i = R.queue.shift();
   if (!knew) R.missed.add(i);
-  S.known[S.dir][i] = knew;
+  known()[i] = knew;
   const today = iso(new Date());
   if (!S.days.includes(today)) S.days.push(today);
   R.revealed = false;
@@ -197,9 +253,13 @@ function reveal() { R.revealed = true; render(); }
 function setPhrase(el, lang, c) { el.lang = lang; el.textContent = lang === 'ru' ? tie(c.ru) : c.en; }
 
 function render() {
-  const fromRu = S.dir === 'ru-en', known = S.known[S.dir];
-  document.querySelectorAll('.dir button').forEach(b => b.setAttribute('aria-pressed', b.dataset.dir === S.dir));
-  $('stats').textContent = `Дней подряд: ${streak(S.days, iso(new Date()))} · Помню: ${CARDS.filter((_, i) => known[i]).length} из ${CARDS.length}`;
+  const fromRu = S.dir === 'ru-en', k = known(), CARDS = L.cards;
+  $('lesson').value = L.id;
+  $('order').hidden = !L.chain;
+  document.querySelectorAll('#dir button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === S.dir));
+  document.querySelectorAll('#order button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.v === 'mix') === S.mix));
+  $('stats').textContent = `Дней подряд: ${streak(S.days, iso(new Date()))} · Помню: ${CARDS.filter((_, i) => k[i]).length} из ${CARDS.length}`;
+  $('listTitle').textContent = `Список фраз (${CARDS.length})`;
 
   const over = !R.queue.length;
   $('play').hidden = over; $('done').hidden = !over;
@@ -217,7 +277,8 @@ function render() {
     $('left').textContent = `Осталось: ${R.queue.length}`;
     $('answer').hidden = $('no').hidden = $('yes').hidden = !R.revealed;
     $('show').hidden = R.revealed;
-    $('hint').hidden = R.revealed || S.days.length > 0;
+    $('hint').textContent = tie(L.hint);
+    $('hint').hidden = R.revealed || Object.keys(k).length > 0;
     $('say').hidden = fromRu && !R.revealed;
   }
 
@@ -226,13 +287,13 @@ function render() {
     const en = Object.assign(document.createElement('button'), { textContent: c.en, lang: 'en', title: 'Послушать' });
     en.onclick = () => say(i);
     const ru = Object.assign(document.createElement('span'), { className: 'ru', textContent: tie(c.ru) });
-    const mark = Object.assign(document.createElement('span'), { className: 'mark', textContent: known[i] ? 'помню' : '' });
+    const mark = Object.assign(document.createElement('span'), { className: 'mark', textContent: k[i] ? 'помню' : '' });
     li.append(en, mark, ru);
     return li;
   }));
 }
 
-const all = () => CARDS.map((_, i) => i);
+const all = () => L.cards.map((_, i) => i);
 $('show').onclick = reveal;
 $('yes').onclick = () => answer(true);
 $('no').onclick = () => answer(false);
@@ -240,11 +301,14 @@ $('no').onclick = () => answer(false);
 $('say').onclick = e => { say(R.queue[0]); e.currentTarget.blur(); };
 $('again').onclick = () => startRound(all());
 $('retry').onclick = () => startRound([...R.missed]);
-document.querySelectorAll('.dir button').forEach(b => b.onclick = () => { S.dir = b.dataset.dir; save(); b.blur(); startRound(all()); });
+document.querySelectorAll('#dir button').forEach(b => b.onclick = () => { S.dir = b.dataset.v; save(); b.blur(); startRound(all()); });
+document.querySelectorAll('#order button').forEach(b => b.onclick = () => { S.mix = b.dataset.v === 'mix'; save(); b.blur(); startRound(all()); });
+$('lesson').replaceChildren(...[...LESSONS].reverse().map(l => new Option(`Урок ${l.id}. ${l.title}`, l.id)));
+$('lesson').onchange = e => { L = LESSONS.find(l => l.id === e.target.value); S.lesson = L.id; save(); e.target.blur(); startRound(all()); };
 
 document.addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey || !R.queue.length) return;
-  const onControl = e.target.closest('button, summary');
+  const onControl = e.target.closest('button, summary, select');
   if ((e.key === ' ' || e.key === 'Enter') && !onControl && !R.revealed) { e.preventDefault(); reveal(); }
   else if (e.key === 'ArrowRight' && R.revealed) answer(true);
   else if (e.key === 'ArrowLeft' && R.revealed) answer(false);
@@ -259,6 +323,10 @@ if (location.search.includes('selftest')) {
   ok(streak(['2026-10-03'], '2026-10-06') === 0, 'пропуск рвёт серию');
   ok(streak(['2026-09-30', '2026-10-01'], '2026-10-01') === 2, 'переход через месяц');
   ok(streak([], '2026-10-06') === 0, 'пусто');
+  ok(order([5, 2, 9], true).join() === '2,5,9', 'цепочка идёт по порядку');
+  ok(order([5, 2, 9], false).length === 3, 'вразбивку ничего не теряется');
+  ok(LESSONS.every(l => l.cards.length && l.cards.every(c => c.en && c.ru)), 'в каждом уроке есть фразы');
+  ok(new Set(LESSONS.map(l => l.id)).size === LESSONS.length, 'номера уроков не повторяются');
   document.title = 'selftest ok';
 }
 
