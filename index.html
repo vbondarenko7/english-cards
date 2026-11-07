@@ -29,6 +29,7 @@ p, h1, h2, ol, ul { margin: 0; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 h2 { font-size: 1.25rem; font-weight: 600; line-height: 1.3; text-wrap: balance; }
 .meta, .stats, .mark, kbd { font-size: .8125rem; color: var(--muted); }
+.phrase, #list button, #list .ru, #missed { white-space: pre-line; }
 .phrase { font-size: 1.5rem; font-weight: 600; line-height: 1.3; text-wrap: balance; }
 .hint { color: var(--muted); text-wrap: pretty; max-width: 32rem; }
 
@@ -191,12 +192,39 @@ const LESSONS = [
     ['Turn the cup upside down.', 'Переверни чашку вверх дном.'],
     ['Leave the cup there.', 'Оставь чашку там.'],
   ] },
+  // Видео https://www.youtube.com/watch?v=Btq0hwzUt1E (в главах — «Симуляция»), фразы — из его описания.
+  // Карточка — целый микродиалог, реплики через \n.
+  { id: '2.5', title: 'Симуляция: 23 диалога на кухне', chain: true, hint: 'Скажи весь диалог вслух по-английски, потом открой ответ. Лучше разыгрывать с настоящей чашкой.', cards: [
+    ['Hi! How are you?\nHi! I’m good. How about you?\nI’m good too.', 'Привет! Как дела?\nПривет! Хорошо. А у тебя?\nТоже хорошо.'],
+    ['I’ve got some coffee. Would you like some?\nYes, please. Just a little.', 'У меня есть кофе. Хочешь?\nДа, пожалуйста. Совсем чуть-чуть.'],
+    ['Can I use this cup?\nYes, of course. It looks like mine.', 'Можно взять эту чашку?\nДа, конечно. Похожа на мою.'],
+    ['I’d like some milk in my coffee.\nSure. Could you open the fridge and pass me the milk?', 'Я бы хотел молока в кофе.\nКонечно. Можешь открыть холодильник и передать мне молоко?'],
+    ['Oh no! We’re running out of milk.\nI’ll get some on my way home.', 'Ой, нет! Молоко заканчивается.\nКуплю по дороге домой.'],
+    ['How about a cup of tea? Would you like some?\nSounds good. Pour a little into my cup, please.', 'Как насчёт чашки чая? Хочешь?\nЗвучит хорошо. Налей немного в мою чашку, пожалуйста.'],
+    ['Be careful! Don’t spill the tea.\nI’ll do my best. The cup’s quite full.', 'Осторожно! Не пролей чай.\nПостараюсь. Чашка довольно полная.'],
+    ['Just a little, please.\nSure. Let me know when to stop.', 'Совсем чуть-чуть, пожалуйста.\nКонечно. Скажи, когда остановиться.'],
+    ['I need a chair. Where can I get one?\nHow about this one? Is it okay?', 'Мне нужен стул. Где его взять?\nКак насчёт этого? Подойдёт?'],
+    ['This one looks good.\nCan I use it?', 'Этот выглядит хорошо.\nМожно его взять?'],
+    ['Let me move this chair for you.\nThanks. That’s much better.', 'Давай я подвину тебе этот стул.\nСпасибо. Так гораздо лучше.'],
+    ['Can you pass me the sugar?\nSure. Here you go.', 'Передашь мне сахар?\nКонечно. Держи.'],
+    ['Do you like it? How is it?\nIt’s much better than I expected.', 'Тебе нравится? Ну как?\nГораздо лучше, чем я ожидал.'],
+    ['Would you like a little more?\nNo, thanks. I’m good.', 'Хочешь ещё немного?\nНет, спасибо. Мне хватит.'],
+    ['What do you feel like eating?\nI don’t know. What’s available?', 'Что тебе хочется поесть?\nНе знаю. Что есть?'],
+    ['We’ve got some cake and a few eggs.\nI’d like a couple of eggs, please.', 'У нас есть торт и несколько яиц.\nМне пару яиц, пожалуйста.'],
+    ['You might want to use both hands.\nGood idea. It’s heavier than I thought.', 'Возьми лучше обеими руками.\nХорошая мысль. Тяжелее, чем я думал.'],
+    ['Could you put these plates on the table?\nSure. How many do we need?', 'Можешь поставить эти тарелки на стол?\nКонечно. Сколько нам нужно?'],
+    ['I can’t find the fork.\nHave you checked the fridge?\nGot it! It was in there.', 'Не могу найти вилку.\nА в холодильнике смотрел?\nНашёл! Она была там.'],
+    ['There’s something on the floor. What’s that?\nOh, it’s a frying pan. I’ll pick it up.', 'На полу что-то лежит. Что это?\nА, это сковородка. Я подниму.'],
+    ['Actually, I’m not that hungry.\nSame here. Let’s leave it for later.', 'Вообще-то я не так уж голоден.\nЯ тоже. Давай оставим на потом.'],
+    ['Let’s put everything away.\nGood idea. I’ll put the plates away.', 'Давай всё уберём.\nХорошая мысль. Я уберу тарелки.'],
+    ['Could you hand me your cup?\nHere you go. Thanks for the coffee.', 'Подай мне свою чашку, пожалуйста.\nДержи. Спасибо за кофе.'],
+  ] },
 ];
 LESSONS.forEach(l => l.cards = l.cards.map(([en, ru]) => ({ en, ru })));
 
 const $ = id => document.getElementById(id);
 // Короткие слова («в», «на», «не») не оставляем висеть в конце строки.
-const tie = s => s.replace(/(^|[\s(«])([А-Яа-яЁё]{1,2})\s/g, '$1$2 ');
+const tie = s => s.replace(/(^|[ («])([А-Яа-яЁё]{1,2}) /g, '$1$2 ');
 const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 // Сколько дней подряд были занятия; сегодняшний пропуск серию ещё не рвёт.
