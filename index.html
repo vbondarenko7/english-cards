@@ -29,7 +29,11 @@ p, h1, h2, ol, ul { margin: 0; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 h2 { font-size: 1.25rem; font-weight: 600; line-height: 1.3; text-wrap: balance; }
 .meta, .stats, .mark, kbd { font-size: .8125rem; color: var(--muted); }
-.phrase, #list button, #list .ru, #missed { white-space: pre-line; }
+.line { display: block; }
+.line + .line { margin-top: .5em; }
+/* реплика диалога: тире, перенос строки выравнивается по тексту, а не по тире */
+.dash { padding-left: 1.2em; text-indent: -1.2em; }
+#missed .ru { color: var(--muted); }
 .phrase { font-size: 1.5rem; font-weight: 600; line-height: 1.3; text-wrap: balance; }
 .hint { color: var(--muted); text-wrap: pretty; max-width: 32rem; }
 
@@ -278,7 +282,13 @@ function answer(knew) {
 
 function reveal() { R.revealed = true; render(); }
 
-function setPhrase(el, lang, c) { el.lang = lang; el.textContent = lang === 'ru' ? tie(c.ru) : c.en; }
+// Диалог (реплики через \n): каждая реплика — своя строка с тире, чтобы было видно, где сменился говорящий.
+function fill(el, s) {
+  const ls = s.split('\n'), dlg = ls.length > 1;
+  el.replaceChildren(...ls.map(t => Object.assign(document.createElement('span'), { className: dlg ? 'line dash' : 'line', textContent: dlg ? '— ' + t : t })));
+  return el;
+}
+function setPhrase(el, lang, c) { el.lang = lang; fill(el, lang === 'ru' ? tie(c.ru) : c.en); }
 
 function render() {
   const fromRu = S.dir === 'ru-en', k = known(), CARDS = L.cards;
@@ -294,7 +304,11 @@ function render() {
   if (over) {
     const missed = [...R.missed];
     $('score').textContent = missed.length ? `Помню ${R.total - missed.length} из ${R.total}. Не вспомнились:` : 'Вспомнились все.';
-    $('missed').replaceChildren(...missed.map(i => Object.assign(document.createElement('li'), { textContent: `${CARDS[i].en} — ${tie(CARDS[i].ru)}` })));
+    $('missed').replaceChildren(...missed.map(i => {
+      const li = document.createElement('li');
+      li.append(fill(document.createElement('span'), CARDS[i].en), fill(Object.assign(document.createElement('span'), { className: 'ru' }), tie(CARDS[i].ru)));
+      return li;
+    }));
     $('missed').hidden = $('retry').hidden = !missed.length;
     $('retry').textContent = `Повторить трудные (${missed.length})`;
     $('again').classList.toggle('wide', !missed.length);
@@ -312,9 +326,9 @@ function render() {
 
   $('list').replaceChildren(...CARDS.map((c, i) => {
     const li = document.createElement('li');
-    const en = Object.assign(document.createElement('button'), { textContent: c.en, lang: 'en', title: 'Послушать' });
+    const en = fill(Object.assign(document.createElement('button'), { lang: 'en', title: 'Послушать' }), c.en);
     en.onclick = () => say(i);
-    const ru = Object.assign(document.createElement('span'), { className: 'ru', textContent: tie(c.ru) });
+    const ru = fill(Object.assign(document.createElement('span'), { className: 'ru' }), tie(c.ru));
     const mark = Object.assign(document.createElement('span'), { className: 'mark', textContent: k[i] ? 'помню' : '' });
     li.append(en, mark, ru);
     return li;
